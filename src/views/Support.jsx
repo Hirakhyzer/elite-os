@@ -1,0 +1,11 @@
+import { useState } from "react";
+import { formatDate } from "../osLogic";
+import { Button, PageHeading, Panel, Tag } from "../ui";
+
+export function SupportPage({ store, viewer, resolveTicket, createTicket }) {
+  const company = viewer.role === "client" ? (store.projects.find((project) => project.clientId === viewer.clientId)?.client || "Northstar Studio") : null;
+  const tickets = viewer.role === "client" ? store.tickets.filter((ticket) => ticket.client === company) : viewer.role === "finance" ? store.tickets.filter((ticket) => ticket.owner === viewer.id || ticket.source === "Client Portal") : store.tickets;
+  const [subject, setSubject] = useState("");
+  const canResolve = ["admin", "support", "finance", "sales"].includes(viewer.role);
+  return <div className="page"><PageHeading eyebrow="Customer success" title={viewer.role === "client" ? "How can we help?" : "Support inbox and AI handoffs"} text={viewer.role === "client" ? "Ask a question about your project, documents, invoice, or upcoming meeting. Customer Success will reply through your secure portal." : "Every AI escalation and client request is assigned to a responsible department with visible status."}/><div className="support-layout"><Panel eyebrow="Create request" title="Open a support ticket"><textarea value={subject} onChange={(event) => setSubject(event.target.value)} placeholder="Describe your question or issue..." rows="5"/><Button className="wide" onClick={() => { if (subject.trim()) { createTicket(subject.trim()); setSubject(""); } }}>Route to Customer Success →</Button><p className="hint">The AI assistant handles general questions and opens a ticket when a human team member is needed.</p></Panel><Panel eyebrow="Inbox" title={`${tickets.length} visible requests`}><div className="ticket-list">{tickets.map((ticket) => <article key={ticket.id}><div className={`ticket-priority ${ticket.priority.toLowerCase()}`}/><div><strong>{ticket.subject}</strong><small>{ticket.client} · {ticket.source} · {formatDate(ticket.created)}</small></div><Tag tone={ticket.status === "Resolved" ? "success" : ticket.status === "Escalated" ? "danger" : "warning"}>{ticket.status}</Tag>{canResolve && ticket.status !== "Resolved" && <button onClick={() => resolveTicket(ticket)}>Resolve</button>}</article>)}</div></Panel></div></div>;
+}
